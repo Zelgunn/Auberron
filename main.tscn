@@ -1,0 +1,5 @@
+[gd_scene format=3 uid="uid://dv0swa7mty2ep"]
+
+[node name="Node2D" type="Node2D" unique_id=1808969983]
+
+[node name="GameManager" type="GameManager" parent="." unique_id=2012020472]

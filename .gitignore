@@ -1,0 +1,28 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+~*.dll
+*.translation
+export_credentials.cfg
+*.tmp
+
+# Export output
+build/
+export/
+
+# Mono-specific ignores
+data_*/
+mono_crash.*.json
+
+# --- Rust ---
+# All compilation artifacts, including the .dll/.so
+target/
+
+# rustc will dump stack traces when hitting an internal compiler error to PWD
+rustc-ice-*.txt
+
+# --- OS / editor noise ---
+.vscode
+Thumbs.db
+Desktop.ini
+.DS_Store
