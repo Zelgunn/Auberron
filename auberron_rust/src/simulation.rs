@@ -24,8 +24,8 @@ impl Simulation {
     pub fn advance(&mut self, delta: f64) {
         self.total_time += delta;
 
-        let positive_rates = self.positive_ledger.resource_rates();
-        let negative_rates = self.negative_ledger.resource_rates();
+        let positive_rates = self.positive_ledger.compute_resource_rates();
+        let negative_rates = self.negative_ledger.compute_resource_rates();
         self.resources
             .integrate(positive_rates, negative_rates, delta);
     }

@@ -252,6 +252,7 @@ pub struct GameResourceLedger {
     contributions: Vec<GameResourceContribution>,
 
     // Cache
+    dirty: bool,
     cached_dynamics: GameResourceDynamics,
     cached_rates: GameResourceAmounts,
 }
@@ -260,6 +261,8 @@ impl GameResourceLedger {
     pub fn new() -> Self {
         return Self {
             contributions: Vec::with_capacity(16),
+
+            dirty: false,
             cached_dynamics: GameResourceDynamics::default(),
             cached_rates: ZERO_RESOURCES,
         };
@@ -267,16 +270,12 @@ impl GameResourceLedger {
 
     // region: Contributions/Contributors
     pub fn add_contribution(&mut self, contribution: GameResourceContribution) {
-        let dirty: bool = contribution.enabled && contribution.is_neutral();
-
+        let dirty: bool = contribution.enabled && !contribution.is_neutral();
         self.contributions.push(contribution);
-
-        if dirty {
-            self.recompute();
-        }
+        self.dirty |= dirty;
     }
 
-    /// Add all contributions then updates the cache.
+    /// Add all contributions then invalidates the cache.
     /// Assumes at least one contributor is active and non-neutral.
     /// Use `add_contribution` instead if all contributions are neutral.
     ///
@@ -284,13 +283,14 @@ impl GameResourceLedger {
     /// * `contributions`: a non-neutral set of contributions
     pub fn add_contributions(&mut self, contributions: Vec<GameResourceContribution>) {
         self.contributions.extend(contributions);
-        self.recompute();
+        self.dirty = true;
     }
 
     /// Enable/Disable contributions associated to the given contributor ID.
-    /// If the state of at least a non-neutral contribution changes, recomputes the cache.
+    /// If the state of at least a non-neutral contribution changes, invalidates the cache.
     pub fn enable_contributor(&mut self, id: ContributorId, enabled: bool) {
         let mut dirty: bool = false;
+
         for contribution in &mut self.contributions {
             if contribution.source == id {
                 if contribution.enabled != enabled {
@@ -300,9 +300,7 @@ impl GameResourceLedger {
             }
         }
 
-        if dirty {
-            self.recompute();
-        }
+        self.dirty |= dirty;
     }
     // endregion
 
@@ -324,12 +322,18 @@ impl GameResourceLedger {
         }
 
         self.cached_rates = self.cached_dynamics.resource_rates();
+        self.dirty = false;
     }
 
     // endregion
 
-    /// Getter for the current cached resource Rates.
-    pub fn resource_rates(&self) -> GameResourceAmounts {
+    /// Computes or gets the current resource rates.
+    /// If the cache is marked as dirty/invalid, it is recomputed first.
+    pub fn compute_resource_rates(&mut self) -> GameResourceAmounts {
+        if self.dirty {
+            self.recompute();
+        }
+
         return self.cached_rates;
     }
 
