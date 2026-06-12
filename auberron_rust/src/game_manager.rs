@@ -20,7 +20,5 @@ impl INode for GameManager {
 
     fn process(&mut self, delta: f64) {
         self.simulation.advance(delta);
-
-        godot_print!("{}", self.simulation.get_total_time());
     }
 }
