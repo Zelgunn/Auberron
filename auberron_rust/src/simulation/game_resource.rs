@@ -245,6 +245,10 @@ impl GameResourceContribution {
     fn is_neutral(&self) -> bool {
         return self.amount == self.dynamics_type.neutral();
     }
+
+    fn is_identity(&self) -> bool {
+        return !self.enabled || self.is_neutral();
+    }
 }
 // endregion
 
@@ -269,21 +273,19 @@ impl GameResourceLedger {
     }
 
     // region: Contributions/Contributors
+    /// Add a contribution to the ledger.
+    /// Invalidates the cache, unless the contribution is an identity.
     pub fn add_contribution(&mut self, contribution: GameResourceContribution) {
-        let dirty: bool = contribution.enabled && !contribution.is_neutral();
+        self.dirty |= !contribution.is_identity();
         self.contributions.push(contribution);
-        self.dirty |= dirty;
     }
 
-    /// Add all contributions then invalidates the cache.
-    /// Assumes at least one contributor is active and non-neutral.
-    /// Use `add_contribution` instead if all contributions are neutral.
-    ///
-    /// # Arguments
-    /// * `contributions`: a non-neutral set of contributions
+    /// Add all contributions then invalidates the cache, unless all contributions were identities.
     pub fn add_contributions(&mut self, contributions: Vec<GameResourceContribution>) {
+        self.dirty |= contributions
+            .iter()
+            .any(|contribution| !contribution.is_identity());
         self.contributions.extend(contributions);
-        self.dirty = true;
     }
 
     /// Enable/Disable contributions associated to the given contributor ID.
@@ -292,11 +294,9 @@ impl GameResourceLedger {
         let mut dirty: bool = false;
 
         for contribution in &mut self.contributions {
-            if contribution.source == id {
-                if contribution.enabled != enabled {
-                    contribution.enabled = enabled;
-                    dirty |= !contribution.is_neutral();
-                }
+            if (contribution.source == id) && (contribution.enabled != enabled) {
+                contribution.enabled = enabled;
+                dirty |= !contribution.is_neutral();
             }
         }
 
@@ -346,4 +346,54 @@ impl Default for GameResourceLedger {
     }
 }
 
+// endregion
+
+// region Unit tests
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn neutral_contribution_does_not_dirty() {
+        let mut ledger = GameResourceLedger::default();
+        for (i, game_resource_dynamics_type) in
+            GameResourceDynamicsType::VARIANTS.iter().enumerate()
+        {
+            let contribution = GameResourceContribution::new(
+                ContributionId(i as u32),
+                ContributorId(0),
+                GameResourceType::Solarite,
+                *game_resource_dynamics_type,
+                game_resource_dynamics_type.neutral(),
+            );
+            ledger.add_contribution(contribution);
+
+            assert!(!ledger.dirty);
+            assert_eq!(ledger.compute_resource_rates(), ZERO_RESOURCES);
+        }
+    }
+
+    #[test]
+    fn neutral_contributions_do_not_dirty() {
+        let mut ledger = GameResourceLedger::default();
+        let mut contributions: Vec<GameResourceContribution> =
+            Vec::with_capacity(GameResourceDynamicsType::COUNT);
+        for (i, game_resource_dynamics_type) in
+            GameResourceDynamicsType::VARIANTS.iter().enumerate()
+        {
+            let contribution = GameResourceContribution::new(
+                ContributionId(i as u32),
+                ContributorId(0),
+                GameResourceType::Solarite,
+                *game_resource_dynamics_type,
+                game_resource_dynamics_type.neutral(),
+            );
+            contributions.push(contribution);
+        }
+        ledger.add_contributions(contributions);
+
+        assert!(!ledger.dirty);
+        assert_eq!(ledger.compute_resource_rates(), ZERO_RESOURCES);
+    }
+}
 // endregion
