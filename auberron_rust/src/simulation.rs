@@ -1,5 +1,8 @@
 mod game_resource;
-use game_resource::{GameResourceLedger, GameResources};
+use game_resource::{
+    ContributionId, ContributorId, GameResourceContribution, GameResourceLedger, GameResourceType,
+    GameResources,
+};
 
 pub struct Simulation {
     total_time: f64,
@@ -37,3 +40,8 @@ impl Simulation {
 
     // endregion
 }
+
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+// }
