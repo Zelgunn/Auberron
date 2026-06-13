@@ -30,7 +30,7 @@ pub enum GameResourceType {
 
 impl From<GameResourceType> for usize {
     fn from(value: GameResourceType) -> usize {
-        return value as usize;
+        value as usize
     }
 }
 // endregion
@@ -43,9 +43,9 @@ pub struct GameResources {
 
 impl GameResources {
     pub const fn new() -> Self {
-        return Self {
+        Self {
             amounts: ZERO_RESOURCES,
-        };
+        }
     }
 
     pub fn integrate(
@@ -66,7 +66,7 @@ impl GameResources {
 
 impl Default for GameResources {
     fn default() -> Self {
-        return Self::new();
+        Self::new()
     }
 }
 
@@ -79,7 +79,7 @@ impl fmt::Debug for GameResources {
                 text.field(game_resource_type.as_ref(), &amount);
             }
         }
-        return text.finish();
+        text.finish()
     }
 }
 // endregion
@@ -95,25 +95,25 @@ pub enum GameResourceDynamicsType {
 
 impl GameResourceDynamicsType {
     pub const fn neutral(self) -> f64 {
-        return match self {
+        match self {
             Self::Additive => 0.0,
             Self::MultiplyAdd => 0.0,
             Self::MultiplyCompound => 1.0,
-        };
+        }
     }
 
     pub const fn combine(self, accumulator: f64, value: f64) -> f64 {
-        return match self {
+        match self {
             Self::Additive => accumulator + value,
             Self::MultiplyAdd => accumulator + value,
             Self::MultiplyCompound => accumulator * value,
-        };
+        }
     }
 }
 
 impl From<GameResourceDynamicsType> for usize {
     fn from(value: GameResourceDynamicsType) -> usize {
-        return value as usize;
+        value as usize
     }
 }
 
@@ -125,11 +125,11 @@ pub struct GameResourceDynamics {
 
 impl GameResourceDynamics {
     pub fn new() -> Self {
-        return Self {
+        Self {
             amounts: std::array::from_fn(|dyn_type| {
                 [GameResourceDynamicsType::VARIANTS[dyn_type].neutral(); GameResourceType::COUNT]
             }),
-        };
+        }
     }
 
     pub fn amount(
@@ -137,19 +137,19 @@ impl GameResourceDynamics {
         resource_type: GameResourceType,
         dynamics_type: GameResourceDynamicsType,
     ) -> f64 {
-        return self.amounts[dynamics_type as usize][resource_type as usize];
+        self.amounts[dynamics_type as usize][resource_type as usize]
     }
 
     pub fn resource_rate(&self, resource_type: GameResourceType) -> f64 {
         use GameResourceDynamicsType::*;
-        return self.amount(resource_type, Additive)
+        self.amount(resource_type, Additive)
             * (1.0 + self.amount(resource_type, MultiplyAdd))
-            * self.amount(resource_type, MultiplyCompound);
+            * self.amount(resource_type, MultiplyCompound)
     }
 
     // todo: cache result from this as well
     pub fn resource_rates(&self) -> GameResourceAmounts {
-        return std::array::from_fn(|i| self.resource_rate(GameResourceType::VARIANTS[i]));
+        std::array::from_fn(|i| self.resource_rate(GameResourceType::VARIANTS[i]))
     }
 
     pub fn wipe(&mut self) {
@@ -173,7 +173,7 @@ impl GameResourceDynamics {
 
 impl Default for GameResourceDynamics {
     fn default() -> Self {
-        return Self::new();
+        Self::new()
     }
 }
 
@@ -204,13 +204,13 @@ impl GameResourceContribution {
         dynamics_type: GameResourceDynamicsType,
         amount: f64,
     ) -> Self {
-        return Self {
+        Self {
             contribution_id,
             source_id,
             resource_type,
             dynamics_type,
             amount,
-        };
+        }
     }
 
     pub fn new_additive(
@@ -219,13 +219,13 @@ impl GameResourceContribution {
         resource_type: GameResourceType,
         amount: f64,
     ) -> Self {
-        return GameResourceContribution::new(
+        GameResourceContribution::new(
             contribution_id,
             source_id,
             resource_type,
             GameResourceDynamicsType::Additive,
             amount,
-        );
+        )
     }
 
     pub fn new_additive_multiplier(
@@ -234,13 +234,13 @@ impl GameResourceContribution {
         resource_type: GameResourceType,
         amount: f64,
     ) -> Self {
-        return GameResourceContribution::new(
+        GameResourceContribution::new(
             contribution_id,
             source_id,
             resource_type,
             GameResourceDynamicsType::MultiplyAdd,
             amount,
-        );
+        )
     }
 
     pub fn new_compounding_multiplier(
@@ -249,17 +249,17 @@ impl GameResourceContribution {
         resource_type: GameResourceType,
         amount: f64,
     ) -> Self {
-        return GameResourceContribution::new(
+        GameResourceContribution::new(
             contribution_id,
             source_id,
             resource_type,
             GameResourceDynamicsType::MultiplyCompound,
             amount,
-        );
+        )
     }
 
     fn is_neutral(&self) -> bool {
-        return self.amount == self.dynamics_type.neutral();
+        self.amount == self.dynamics_type.neutral()
     }
 }
 // endregion
@@ -290,14 +290,14 @@ pub struct GameResourceLedger {
 
 impl GameResourceLedger {
     pub fn new() -> Self {
-        return Self {
+        Self {
             contributor_states: HashMap::with_capacity(16),
             contributions: Vec::with_capacity(32),
 
             dirty: false,
             cached_dynamics: GameResourceDynamics::default(),
             cached_rates: ZERO_RESOURCES,
-        };
+        }
     }
 
     // region: Contributors/Contributions
@@ -331,34 +331,30 @@ impl GameResourceLedger {
             .iter()
             .any(|c| c.source_id == id && !c.is_neutral());
 
-        return Ok(());
+        Ok(())
     }
 
     pub fn contributor_enabled(&self, id: ContributorId) -> bool {
-        return self.contributor_states.get(&id).copied().unwrap_or(false);
+        self.contributor_states.get(&id).copied().unwrap_or(false)
     }
 
-    pub fn contains_contributor(self, id: ContributorId) -> bool {
-        return self.contributor_states.contains_key(&id);
+    pub fn contains_contributor(&self, id: ContributorId) -> bool {
+        self.contributor_states.contains_key(&id)
     }
 
     pub fn contains_contribution(
-        self,
+        &self,
         source_id: ContributorId,
         contribution_id: ContributionId,
     ) -> bool {
-        for contribution in self.contributions {
-            if (contribution.source_id == source_id)
+        self.contributions.iter().any(|contribution| {
+            (contribution.source_id == source_id)
                 && (contribution.contribution_id == contribution_id)
-            {
-                return true;
-            }
-        }
-        return false;
+        })
     }
 
     pub fn contribution_is_identity(&self, contribution: &GameResourceContribution) -> bool {
-        return !self.contributor_enabled(contribution.source_id) || contribution.is_neutral();
+        !self.contributor_enabled(contribution.source_id) || contribution.is_neutral()
     }
 
     /// Add a contribution to the ledger.
@@ -392,8 +388,8 @@ impl GameResourceLedger {
             .iter_mut()
             .find(|c| c.source_id == source_id && c.contribution_id == contribution_id)
             .ok_or(LedgerError::UnknownContribution {
-                source_id: source_id,
-                contribution_id: contribution_id,
+                source_id,
+                contribution_id,
             })?;
 
         if !float_eq(contribution.amount, amount) {
@@ -401,7 +397,7 @@ impl GameResourceLedger {
             self.dirty = true;
         }
 
-        return Ok(());
+        Ok(())
     }
     // endregion
 
@@ -435,7 +431,7 @@ impl GameResourceLedger {
             self.recompute();
         }
 
-        return self.cached_rates;
+        self.cached_rates
     }
 
     //
@@ -443,7 +439,7 @@ impl GameResourceLedger {
 
 impl Default for GameResourceLedger {
     fn default() -> Self {
-        return Self::new();
+        Self::new()
     }
 }
 
@@ -723,6 +719,7 @@ mod tests {
     #[test]
     fn test_toggling_contributor_only_affects_matching_id() {
         let mut ledger = GameResourceLedger::default();
+
         let contribution_0 = GameResourceContribution::new_additive(
             ContributionId(0),
             ContributorId(0),
@@ -730,6 +727,7 @@ mod tests {
             1.0,
         );
         ledger.add_contribution(contribution_0);
+
         let contribution_1 = GameResourceContribution::new_additive(
             ContributionId(0),
             ContributorId(1),
@@ -737,6 +735,12 @@ mod tests {
             1.0,
         );
         ledger.add_contribution(contribution_1);
+
+        ledger
+            .enable_contributor(ContributorId(0), false)
+            .expect("Contributor 0 was manually registered");
+        assert!(!ledger.contributor_enabled(ContributorId(0)));
+        assert!(ledger.contributor_enabled(ContributorId(1)));
     }
 
     #[test]

@@ -1,8 +1,5 @@
 mod game_resource;
-use game_resource::{
-    ContributionId, ContributorId, GameResourceContribution, GameResourceLedger, GameResourceType,
-    GameResources,
-};
+use game_resource::{GameResourceLedger, GameResources};
 
 pub struct Simulation {
     total_time: f64,
@@ -15,13 +12,13 @@ pub struct Simulation {
 
 impl Simulation {
     pub fn new() -> Self {
-        return Self {
+        Self {
             total_time: 0.0,
 
             resources: GameResources::default(),
             positive_ledger: GameResourceLedger::default(),
             negative_ledger: GameResourceLedger::default(),
-        };
+        }
     }
 
     pub fn advance(&mut self, delta: f64) {
@@ -34,8 +31,8 @@ impl Simulation {
     }
 
     // region: Getters
-    pub fn get_total_time(&self) -> f64 {
-        return self.total_time;
+    pub fn total_time(&self) -> f64 {
+        self.total_time
     }
 
     // endregion
